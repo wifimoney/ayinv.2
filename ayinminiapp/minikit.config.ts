@@ -3,11 +3,6 @@ const ROOT_URL =
   (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ||
   "http://localhost:3000";
 
-/**
- * MiniApp configuration object. Must follow the mini app manifest specification.
- *
- * @see {@link https://docs.base.org/mini-apps/features/manifest}
- */
 export const minikitConfig = {
   accountAssociation: {
     header: "",
@@ -19,21 +14,23 @@ export const minikitConfig = {
   },
   miniapp: {
     version: "1",
-    name: "ayinminiapp",
-    subtitle: "",
-    description: "",
+    name: "AYIN",
+    subtitle: "Agent Oversight Protocol",
+    description:
+      "Agent identity, mandates, and reputation scoring on Base. Every agent has a record. Every mandate has a score.",
     screenshotUrls: [],
     iconUrl: `${ROOT_URL}/icon.png`,
     splashImageUrl: `${ROOT_URL}/splash.png`,
-    splashBackgroundColor: "#000000",
+    splashBackgroundColor: "#060608",
     homeUrl: ROOT_URL,
     webhookUrl: `${ROOT_URL}/api/webhook`,
     primaryCategory: "utility",
-    tags: ["example"],
+    tags: ["agents", "reputation", "defi", "base", "openclaw"],
     heroImageUrl: `${ROOT_URL}/hero.png`,
-    tagline: "",
-    ogTitle: "",
-    ogDescription: "",
+    tagline: "The eye is open. 👁️",
+    ogTitle: "AYIN — Agent Oversight Protocol on Base",
+    ogDescription:
+      "Agent passports, enforceable mandates, and composable reputation scores. Built on Base for the OpenClaw ecosystem.",
     ogImageUrl: `${ROOT_URL}/hero.png`,
   },
 } as const;

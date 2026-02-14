@@ -1,22 +1,22 @@
 "use client";
-import { useEffect } from "react";
-import Image from "next/image";
+import { useEffect, useState, useMemo } from "react";
 import { Wallet } from "@coinbase/onchainkit/wallet";
 import { useMiniKit } from "@coinbase/onchainkit/minikit";
-// import { useQuickAuth } from "@coinbase/onchainkit/minikit";
-import styles from "./page.module.css";
+import { AyinEye } from "./components/AyinEye";
+import { NavTabs, Tab } from "./components/NavTabs";
+import { StatBar } from "./components/StatBar";
+import { AgentCard } from "./components/AgentCard";
+import { AgentDetail } from "./components/AgentDetail";
+import { RegisterForm } from "./components/RegisterForm";
+import { MandatesView } from "./components/MandatesView";
+import { MOCK_AGENTS, AgentReputation } from "./lib/contracts";
 
 export default function Home() {
-  // If you need to verify the user's identity, you can use the useQuickAuth hook.
-  // This hook will verify the user's signature and return the user's FID. You can update
-  // this to meet your needs. See the /app/api/auth/route.ts file for more details.
-  // Note: If you don't need to verify the user's identity, you can get their FID and other user data
-  // via `useMiniKit().context?.user`.
-  // const { data, isLoading, error } = useQuickAuth<{
-  //   userFid: string;
-  // }>("/api/auth");
-
   const { setMiniAppReady, isMiniAppReady } = useMiniKit();
+  const [activeTab, setActiveTab] = useState<Tab>("leaderboard");
+  const [selectedAgent, setSelectedAgent] = useState<AgentReputation | null>(
+    null
+  );
 
   useEffect(() => {
     if (!isMiniAppReady) {
@@ -24,59 +24,171 @@ export default function Home() {
     }
   }, [setMiniAppReady, isMiniAppReady]);
 
+  const sortedAgents = useMemo(
+    () => [...MOCK_AGENTS].sort((a, b) => b.score - a.score),
+    []
+  );
+
+  const protocolStats = useMemo(
+    () => [
+      { label: "Agents", value: sortedAgents.length.toString() },
+      {
+        label: "Avg Score",
+        value: Math.round(
+          sortedAgents.reduce((s, a) => s + a.score, 0) / sortedAgents.length
+        ).toString(),
+      },
+      {
+        label: "Trades",
+        value: sortedAgents
+          .reduce((s, a) => s + a.totalTrades, 0)
+          .toLocaleString(),
+      },
+      {
+        label: "Mandates",
+        value: sortedAgents
+          .reduce((s, a) => s + a.mandatesCompleted, 0)
+          .toString(),
+      },
+    ],
+    [sortedAgents]
+  );
+
   return (
-    <div className={styles.container}>
-      <header className={styles.headerWrapper}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        position: "relative",
+        zIndex: 1,
+      }}
+    >
+      {/* Header */}
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0.75rem 1rem",
+          borderBottom: "1px solid rgba(255,255,255,0.04)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <AyinEye size={28} animated={true} />
+          <div>
+            <span
+              style={{
+                fontWeight: 700,
+                fontSize: "0.95rem",
+                letterSpacing: "0.12em",
+                color: "#00ff88",
+              }}
+            >
+              AYIN
+            </span>
+            <span
+              style={{
+                fontSize: "0.55rem",
+                color: "rgba(255,255,255,0.2)",
+                marginLeft: "0.5rem",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+              }}
+            >
+              Sepolia
+            </span>
+          </div>
+        </div>
         <Wallet />
       </header>
 
-      <div className={styles.content}>
-        <Image
-          priority
-          src="/sphere.svg"
-          alt="Sphere"
-          width={200}
-          height={200}
-        />
-        <h1 className={styles.title}>MiniKit</h1>
+      {/* Content */}
+      <main style={{ flex: 1, padding: "1rem", maxWidth: "480px", margin: "0 auto", width: "100%" }}>
+        {selectedAgent ? (
+          <AgentDetail
+            agent={selectedAgent}
+            onBack={() => setSelectedAgent(null)}
+          />
+        ) : (
+          <>
+            {/* Protocol tagline */}
+            <div
+              style={{
+                textAlign: "center",
+                padding: "1rem 0 0.75rem",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "0.65rem",
+                  color: "rgba(255,255,255,0.2)",
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  marginBottom: "0.35rem",
+                }}
+              >
+                Agent Oversight Protocol
+              </div>
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: "rgba(255,255,255,0.5)",
+                  fontStyle: "italic",
+                }}
+              >
+                Every agent has a record. Every mandate has a score.
+              </div>
+            </div>
 
-        <p>
-          Get started by editing <code>app/page.tsx</code>
-        </p>
+            {/* Stats */}
+            <StatBar stats={protocolStats} />
 
-        <h2 className={styles.componentsTitle}>Explore Components</h2>
+            {/* Navigation */}
+            <div style={{ marginTop: "1rem" }}>
+              <NavTabs active={activeTab} onChange={setActiveTab} />
+            </div>
 
-        <ul className={styles.components}>
-          {[
-            {
-              name: "Transaction",
-              url: "https://docs.base.org/onchainkit/transaction/transaction",
-            },
-            {
-              name: "Swap",
-              url: "https://docs.base.org/onchainkit/swap/swap",
-            },
-            {
-              name: "Checkout",
-              url: "https://docs.base.org/onchainkit/checkout/checkout",
-            },
-            {
-              name: "Wallet",
-              url: "https://docs.base.org/onchainkit/wallet/wallet",
-            },
-            {
-              name: "Identity",
-              url: "https://docs.base.org/onchainkit/identity/identity",
-            },
-          ].map((component) => (
-            <li key={component.name}>
-              <a target="_blank" rel="noreferrer" href={component.url}>
-                {component.name}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
+            {/* Tab content */}
+            {activeTab === "leaderboard" && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.4rem",
+                }}
+              >
+                {sortedAgents.map((agent, i) => (
+                  <AgentCard
+                    key={agent.agentId}
+                    agent={agent}
+                    rank={i + 1}
+                    onSelect={() => setSelectedAgent(agent)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {activeTab === "mandates" && <MandatesView />}
+
+            {activeTab === "register" && <RegisterForm />}
+          </>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer
+        style={{
+          textAlign: "center",
+          padding: "1rem",
+          fontSize: "0.6rem",
+          color: "rgba(255,255,255,0.12)",
+          borderTop: "1px solid rgba(255,255,255,0.03)",
+          letterSpacing: "0.05em",
+        }}
+      >
+        AYIN · Built on Base · Integrated with OpenClaw · 👁️
+      </footer>
     </div>
   );
 }
