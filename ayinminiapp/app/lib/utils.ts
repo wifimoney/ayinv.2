@@ -35,3 +35,17 @@ export function formatPercent(value: number): string {
 export function formatNumber(value: number, decimals = 1): string {
   return value.toFixed(decimals);
 }
+
+export function explorerUrl(
+  chainId: number,
+  hashOrAddress: string,
+  type: "tx" | "address" = "tx"
+): string {
+  const explorer =
+    chainId === 8453 ? "https://basescan.org" : "https://sepolia.basescan.org";
+  return `${explorer}/${type}/${hashOrAddress}`;
+}
+
+export function explorerName(chainId: number): string {
+  return chainId === 8453 ? "BaseScan" : "Sepolia BaseScan";
+}

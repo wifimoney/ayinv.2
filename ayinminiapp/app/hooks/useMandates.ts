@@ -1,12 +1,7 @@
 "use client";
-import { useAccount, useReadContract, useReadContracts } from "wagmi";
+import { useAccount, useReadContract, useReadContracts, useChainId } from "wagmi";
 import { formatEther } from "viem";
-import { CONTRACTS, DELEGATION_POLICY_ABI } from "../lib/contracts";
-
-const policyConfig = {
-  address: CONTRACTS.DelegationPolicy as `0x${string}`,
-  abi: DELEGATION_POLICY_ABI,
-} as const;
+import { getContracts, DELEGATION_POLICY_ABI } from "../lib/contracts";
 
 export interface MandateData {
   id: number;
@@ -22,6 +17,13 @@ export interface MandateData {
 
 export function useMandates() {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const contracts = getContracts(chainId);
+
+  const policyConfig = {
+    address: contracts.DelegationPolicy as `0x${string}`,
+    abi: DELEGATION_POLICY_ABI,
+  } as const;
 
   const {
     data: mandateIds,

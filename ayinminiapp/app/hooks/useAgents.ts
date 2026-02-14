@@ -1,32 +1,34 @@
 "use client";
-import { useReadContract, useReadContracts } from "wagmi";
+import { useReadContract, useReadContracts, useChainId } from "wagmi";
 import {
-  CONTRACTS,
+  getContracts,
   AGENT_REGISTRY_ABI,
   AgentReputation,
-  MOCK_AGENTS,
 } from "../lib/contracts";
 
-const registryConfig = {
-  address: CONTRACTS.AgentRegistry as `0x${string}`,
-  abi: AGENT_REGISTRY_ABI,
-} as const;
-
 export function useAgents() {
+  const chainId = useChainId();
+  const contracts = getContracts(chainId);
+
+  const registryConfig = {
+    address: contracts.AgentRegistry as `0x${string}`,
+    abi: AGENT_REGISTRY_ABI,
+  } as const;
+
   const { data: count, isLoading: countLoading } = useReadContract({
     ...registryConfig,
     functionName: "agentCount",
   });
 
   const agentCount = Number(count ?? 0);
-  const contracts = Array.from({ length: agentCount }, (_, i) => ({
+  const agentContracts = Array.from({ length: agentCount }, (_, i) => ({
     ...registryConfig,
     functionName: "getAgent" as const,
     args: [BigInt(i)] as const,
   }));
 
   const { data: agentResults, isLoading: agentsLoading } = useReadContracts({
-    contracts: agentCount > 0 ? contracts : [],
+    contracts: agentCount > 0 ? agentContracts : [],
   });
 
   const agents: AgentReputation[] = agentResults
@@ -57,12 +59,10 @@ export function useAgents() {
     : [];
 
   const isLoading = countLoading || agentsLoading;
-  const useMock = !isLoading && agents.length === 0;
 
   return {
-    agents: useMock ? MOCK_AGENTS : agents,
+    agents,
     isLoading,
-    isMockData: useMock,
-    totalAgents: useMock ? MOCK_AGENTS.length : agentCount,
+    totalAgents: agentCount,
   };
 }

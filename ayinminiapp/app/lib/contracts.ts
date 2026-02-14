@@ -1,12 +1,50 @@
-// AYIN Protocol - Base Sepolia Deployed Contracts
-export const CHAIN_ID = 84532; // Base Sepolia
+// AYIN Protocol - Multi-Chain Contract Configuration
 
-export const CONTRACTS = {
-  AgentRegistry: "0xF2Cc613924e7f3e3Ee453f417F5eA63Aa78cC1D4" as const,
-  DelegationPolicy: "0x71d50d575A86E6F34BE05abC223ac704da0d7a1d" as const,
-  AyinSmartAccount: "0x25269aB39a7dF7303fb35cfA947a12E5244e23fC" as const,
-  PredictionMarket: "0x89ecC0E5345D409930426cF1b352E30930da563E" as const,
+export const CHAIN_CONFIGS = {
+  // Base Mainnet
+  8453: {
+    name: "Base",
+    rpc: "https://mainnet.base.org",
+    explorer: "https://basescan.org",
+    usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    contracts: {
+      // TODO: Fill in after mainnet deployment
+      AgentRegistry: "0x0000000000000000000000000000000000000000",
+      DelegationPolicy: "0x0000000000000000000000000000000000000000",
+      AyinSmartAccount: "0x0000000000000000000000000000000000000000",
+      PredictionMarket: "0x0000000000000000000000000000000000000000",
+    },
+  },
+  // Base Sepolia (testnet)
+  84532: {
+    name: "Base Sepolia",
+    rpc: "https://sepolia.base.org",
+    explorer: "https://sepolia.basescan.org",
+    usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    contracts: {
+      AgentRegistry: "0xF2Cc613924e7f3e3Ee453f417F5eA63Aa78cC1D4",
+      DelegationPolicy: "0x71d50d575A86E6F34BE05abC223ac704da0d7a1d",
+      AyinSmartAccount: "0x25269aB39a7dF7303fb35cfA947a12E5244e23fC",
+      PredictionMarket: "0x89ecC0E5345D409930426cF1b352E30930da563E",
+    },
+  },
 } as const;
+
+// Default to mainnet in production, sepolia in dev
+export const DEFAULT_CHAIN_ID =
+  process.env.NODE_ENV === "production" ? 8453 : 84532;
+
+export function getChainConfig(chainId: number = DEFAULT_CHAIN_ID) {
+  return CHAIN_CONFIGS[chainId as keyof typeof CHAIN_CONFIGS];
+}
+
+export function getContracts(chainId: number = DEFAULT_CHAIN_ID) {
+  return getChainConfig(chainId).contracts;
+}
+
+// Backward compat — default contracts for static imports
+const defaultContracts = getContracts();
+export const CONTRACTS = defaultContracts;
 
 // AgentRegistry ABI (core read/write functions)
 export const AGENT_REGISTRY_ABI = [
@@ -188,7 +226,7 @@ export const AGENT_TYPES: Record<number, string> = {
   4: "Orchestrator",
 };
 
-// Mock reputation data (until reputation indexer API is live)
+// Reputation data shape
 export interface AgentReputation {
   agentId: number;
   address: string;
@@ -201,67 +239,3 @@ export interface AgentReputation {
   mandatesRevoked: number;
   lastActive: number;
 }
-
-// Placeholder data for demo — replaced by live indexer when ready
-export const MOCK_AGENTS: AgentReputation[] = [
-  {
-    agentId: 1,
-    address: "0x1a2b3c4d5e6f7890abcdef1234567890abcdef12",
-    score: 87,
-    winRate: 0.72,
-    sharpeRatio: 2.1,
-    maxDrawdown: 0.08,
-    totalTrades: 342,
-    mandatesCompleted: 15,
-    mandatesRevoked: 1,
-    lastActive: Date.now() - 1000 * 60 * 30,
-  },
-  {
-    agentId: 2,
-    address: "0x2b3c4d5e6f7890abcdef1234567890abcdef1234",
-    score: 64,
-    winRate: 0.58,
-    sharpeRatio: 1.3,
-    maxDrawdown: 0.15,
-    totalTrades: 128,
-    mandatesCompleted: 8,
-    mandatesRevoked: 3,
-    lastActive: Date.now() - 1000 * 60 * 60 * 2,
-  },
-  {
-    agentId: 3,
-    address: "0x3c4d5e6f7890abcdef1234567890abcdef123456",
-    score: 93,
-    winRate: 0.81,
-    sharpeRatio: 3.2,
-    maxDrawdown: 0.04,
-    totalTrades: 567,
-    mandatesCompleted: 22,
-    mandatesRevoked: 0,
-    lastActive: Date.now() - 1000 * 60 * 5,
-  },
-  {
-    agentId: 4,
-    address: "0x4d5e6f7890abcdef1234567890abcdef12345678",
-    score: 41,
-    winRate: 0.45,
-    sharpeRatio: 0.6,
-    maxDrawdown: 0.22,
-    totalTrades: 89,
-    mandatesCompleted: 4,
-    mandatesRevoked: 5,
-    lastActive: Date.now() - 1000 * 60 * 60 * 24,
-  },
-  {
-    agentId: 5,
-    address: "0x5e6f7890abcdef1234567890abcdef1234567890",
-    score: 76,
-    winRate: 0.65,
-    sharpeRatio: 1.8,
-    maxDrawdown: 0.11,
-    totalTrades: 201,
-    mandatesCompleted: 11,
-    mandatesRevoked: 2,
-    lastActive: Date.now() - 1000 * 60 * 60,
-  },
-];

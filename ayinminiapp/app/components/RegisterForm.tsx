@@ -5,24 +5,30 @@ import {
   useReadContract,
   useWriteContract,
   useWaitForTransactionReceipt,
+  useChainId,
 } from "wagmi";
 import { keccak256, toHex } from "viem";
 import {
   AGENT_TYPES,
-  CONTRACTS,
+  getContracts,
   AGENT_REGISTRY_ABI,
+  getChainConfig,
 } from "../lib/contracts";
-
-const registryConfig = {
-  address: CONTRACTS.AgentRegistry as `0x${string}`,
-  abi: AGENT_REGISTRY_ABI,
-} as const;
+import { explorerUrl, explorerName } from "../lib/utils";
 
 export function RegisterForm() {
   const [agentType, setAgentType] = useState(0);
   const [strategyDesc, setStrategyDesc] = useState("");
 
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const contracts = getContracts(chainId);
+  const chainConfig = getChainConfig(chainId);
+
+  const registryConfig = {
+    address: contracts.AgentRegistry as `0x${string}`,
+    abi: AGENT_REGISTRY_ABI,
+  } as const;
 
   const { data: alreadyRegistered } = useReadContract({
     ...registryConfig,
@@ -265,7 +271,7 @@ export function RegisterForm() {
         >
           Agent registered successfully!{" "}
           <a
-            href={`https://sepolia.basescan.org/tx/${txHash}`}
+            href={explorerUrl(chainId, txHash)}
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -274,7 +280,7 @@ export function RegisterForm() {
               opacity: 0.8,
             }}
           >
-            View on BaseScan
+            View on {explorerName(chainId)}
           </a>
         </div>
       )}
@@ -296,7 +302,7 @@ export function RegisterForm() {
           color: "rgba(255,255,255,0.2)",
         }}
       >
-        Base Sepolia · Gas fees apply
+        {chainConfig.name} · Gas fees apply
       </div>
     </div>
   );

@@ -1,4 +1,7 @@
 "use client";
+import { useState } from "react";
+import { useChainId } from "wagmi";
+import sdk from "@farcaster/miniapp-sdk";
 import { AgentReputation, AGENT_TYPES } from "../lib/contracts";
 import {
   truncateAddress,
@@ -19,6 +22,8 @@ export function AgentDetail({
 }) {
   const color = scoreColor(agent.score);
   const _tier = scoreTier(agent.score);
+  const chainId = useChainId();
+  const [copied, setCopied] = useState(false);
 
   const metrics = [
     { label: "Win Rate", value: formatPercent(agent.winRate) },
@@ -34,6 +39,28 @@ export function AgentDetail({
       value: agent.mandatesRevoked.toString(),
     },
   ];
+
+  const shareUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/agent/${agent.address}`
+      : "";
+
+  async function handleShare() {
+    try {
+      await sdk.actions.composeCast({
+        text: "Check out this agent's AYIN score",
+        embeds: [shareUrl as `https://${string}`],
+      });
+    } catch {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        // Fallback silently
+      }
+    }
+  }
 
   return (
     <div>
@@ -76,7 +103,13 @@ export function AgentDetail({
           >
             {truncateAddress(agent.address)}
           </div>
-          <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "0.5rem",
+              justifyContent: "center",
+            }}
+          >
             <span
               style={{
                 fontSize: "0.65rem",
@@ -164,6 +197,28 @@ export function AgentDetail({
         Last active {formatTimeAgo(agent.lastActive)}
       </div>
 
+      {/* BaseScan link */}
+      <div
+        style={{
+          textAlign: "center",
+          marginBottom: "1rem",
+        }}
+      >
+        <a
+          href={`${chainId === 8453 ? "https://basescan.org" : "https://sepolia.basescan.org"}/address/${agent.address}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: "#00ff88",
+            fontSize: "0.65rem",
+            textDecoration: "none",
+            opacity: 0.6,
+          }}
+        >
+          View on {chainId === 8453 ? "BaseScan" : "Sepolia BaseScan"} ↗
+        </a>
+      </div>
+
       {/* Action buttons */}
       <div style={{ display: "flex", gap: "0.5rem" }}>
         <button
@@ -183,18 +238,21 @@ export function AgentDetail({
           Create Mandate
         </button>
         <button
+          onClick={handleShare}
           style={{
             padding: "0.75rem 1rem",
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(0,255,136,0.08)",
+            border: "1px solid rgba(0,255,136,0.2)",
             borderRadius: "10px",
-            color: "rgba(255,255,255,0.5)",
-            fontSize: "0.8rem",
+            color: "#00ff88",
+            fontSize: "0.75rem",
             cursor: "pointer",
             fontFamily: "inherit",
+            letterSpacing: "0.04em",
+            whiteSpace: "nowrap",
           }}
         >
-          ⋯
+          {copied ? "Copied!" : "SHARE"}
         </button>
       </div>
     </div>
