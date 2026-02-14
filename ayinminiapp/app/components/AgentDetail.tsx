@@ -18,7 +18,7 @@ export function AgentDetail({
   onBack: () => void;
 }) {
   const color = scoreColor(agent.score);
-  const tier = scoreTier(agent.score);
+  const _tier = scoreTier(agent.score);
 
   const metrics = [
     { label: "Win Rate", value: formatPercent(agent.winRate) },

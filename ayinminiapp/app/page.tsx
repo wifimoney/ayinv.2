@@ -9,7 +9,8 @@ import { AgentCard } from "./components/AgentCard";
 import { AgentDetail } from "./components/AgentDetail";
 import { RegisterForm } from "./components/RegisterForm";
 import { MandatesView } from "./components/MandatesView";
-import { MOCK_AGENTS, AgentReputation } from "./lib/contracts";
+import { AgentReputation } from "./lib/contracts";
+import { useAgents } from "./hooks/useAgents";
 
 export default function Home() {
   const { setMiniAppReady, isMiniAppReady } = useMiniKit();
@@ -18,6 +19,8 @@ export default function Home() {
     null
   );
 
+  const { agents, isLoading, isMockData, totalAgents } = useAgents();
+
   useEffect(() => {
     if (!isMiniAppReady) {
       setMiniAppReady();
@@ -25,33 +28,18 @@ export default function Home() {
   }, [setMiniAppReady, isMiniAppReady]);
 
   const sortedAgents = useMemo(
-    () => [...MOCK_AGENTS].sort((a, b) => b.score - a.score),
-    []
+    () => [...agents].sort((a, b) => b.score - a.score),
+    [agents]
   );
 
   const protocolStats = useMemo(
     () => [
-      { label: "Agents", value: sortedAgents.length.toString() },
-      {
-        label: "Avg Score",
-        value: Math.round(
-          sortedAgents.reduce((s, a) => s + a.score, 0) / sortedAgents.length
-        ).toString(),
-      },
-      {
-        label: "Trades",
-        value: sortedAgents
-          .reduce((s, a) => s + a.totalTrades, 0)
-          .toLocaleString(),
-      },
-      {
-        label: "Mandates",
-        value: sortedAgents
-          .reduce((s, a) => s + a.mandatesCompleted, 0)
-          .toString(),
-      },
+      { label: "Agents", value: totalAgents.toString() },
+      { label: "Avg Score", value: "\u2014" },
+      { label: "Trades", value: "\u2014" },
+      { label: "Mandates", value: "\u2014" },
     ],
-    [sortedAgents]
+    [totalAgents]
   );
 
   return (
@@ -144,6 +132,25 @@ export default function Home() {
             {/* Stats */}
             <StatBar stats={protocolStats} />
 
+            {/* Demo data banner */}
+            {isMockData && (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "0.5rem 0.75rem",
+                  marginTop: "0.75rem",
+                  background: "rgba(255,204,0,0.04)",
+                  border: "1px solid rgba(255,204,0,0.12)",
+                  borderRadius: "8px",
+                  fontSize: "0.65rem",
+                  color: "rgba(255,204,0,0.6)",
+                  letterSpacing: "0.03em",
+                }}
+              >
+                Showing demo data — no agents registered yet
+              </div>
+            )}
+
             {/* Navigation */}
             <div style={{ marginTop: "1rem" }}>
               <NavTabs active={activeTab} onChange={setActiveTab} />
@@ -158,14 +165,27 @@ export default function Home() {
                   gap: "0.4rem",
                 }}
               >
-                {sortedAgents.map((agent, i) => (
-                  <AgentCard
-                    key={agent.agentId}
-                    agent={agent}
-                    rank={i + 1}
-                    onSelect={() => setSelectedAgent(agent)}
-                  />
-                ))}
+                {isLoading ? (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "2rem",
+                      fontSize: "0.75rem",
+                      color: "rgba(255,255,255,0.3)",
+                    }}
+                  >
+                    Loading agents...
+                  </div>
+                ) : (
+                  sortedAgents.map((agent, i) => (
+                    <AgentCard
+                      key={agent.agentId}
+                      agent={agent}
+                      rank={i + 1}
+                      onSelect={() => setSelectedAgent(agent)}
+                    />
+                  ))
+                )}
               </div>
             )}
 
@@ -187,7 +207,7 @@ export default function Home() {
           letterSpacing: "0.05em",
         }}
       >
-        AYIN · Built on Base · Integrated with OpenClaw · 👁️
+        AYIN · Built on Base · Integrated with OpenClaw
       </footer>
     </div>
   );

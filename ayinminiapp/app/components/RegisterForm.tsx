@@ -1,10 +1,102 @@
 "use client";
 import { useState } from "react";
-import { AGENT_TYPES } from "../lib/contracts";
+import {
+  useAccount,
+  useReadContract,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+} from "wagmi";
+import { keccak256, toHex } from "viem";
+import {
+  AGENT_TYPES,
+  CONTRACTS,
+  AGENT_REGISTRY_ABI,
+} from "../lib/contracts";
+
+const registryConfig = {
+  address: CONTRACTS.AgentRegistry as `0x${string}`,
+  abi: AGENT_REGISTRY_ABI,
+} as const;
 
 export function RegisterForm() {
   const [agentType, setAgentType] = useState(0);
   const [strategyDesc, setStrategyDesc] = useState("");
+
+  const { address, isConnected } = useAccount();
+
+  const { data: alreadyRegistered } = useReadContract({
+    ...registryConfig,
+    functionName: "isRegistered",
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+
+  const {
+    writeContract,
+    data: txHash,
+    isPending: isWritePending,
+    error: writeError,
+    reset,
+  } = useWriteContract();
+
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({ hash: txHash });
+
+  const handleRegister = () => {
+    if (!address || !strategyDesc.trim()) return;
+    const strategyHash = keccak256(toHex(strategyDesc));
+    writeContract({
+      ...registryConfig,
+      functionName: "registerAgent",
+      args: [address, strategyHash, agentType],
+    });
+  };
+
+  const isDisabled =
+    !isConnected || !!alreadyRegistered || isWritePending || isConfirming;
+
+  const getButtonText = () => {
+    if (!isConnected) return "Connect Wallet First";
+    if (alreadyRegistered) return "Already Registered";
+    if (isWritePending) return "Confirm in Wallet...";
+    if (isConfirming) return "Confirming...";
+    if (isConfirmed) return "Registered!";
+    return "Register Agent on Base";
+  };
+
+  const getButtonStyle = () => {
+    const base = {
+      width: "100%",
+      padding: "0.875rem",
+      border: "none",
+      borderRadius: "10px",
+      fontSize: "0.85rem",
+      fontWeight: 700 as const,
+      cursor: isDisabled ? "not-allowed" : "pointer",
+      fontFamily: "inherit",
+      letterSpacing: "0.02em",
+    };
+    if (!isConnected || alreadyRegistered) {
+      return {
+        ...base,
+        background: "rgba(255,255,255,0.06)",
+        color: "rgba(255,255,255,0.3)",
+      };
+    }
+    if (isConfirmed) {
+      return {
+        ...base,
+        background: "rgba(0,255,136,0.15)",
+        border: "1px solid rgba(0,255,136,0.3)",
+        color: "#00ff88",
+      };
+    }
+    return {
+      ...base,
+      background: "linear-gradient(135deg, #00ff88 0%, #00cc66 100%)",
+      color: "#0a0a0a",
+    };
+  };
 
   return (
     <div>
@@ -119,30 +211,81 @@ export function RegisterForm() {
             lineHeight: 1.5,
           }}
         >
-          👁️ Registering creates your AYIN Passport — an onchain identity
-          linked to your agent&apos;s address. Your performance will be tracked and
-          scored. Other protocols in the OpenClaw ecosystem can read your
-          reputation.
+          Registering creates your AYIN Passport — an onchain identity linked to
+          your agent&apos;s address. Your performance will be tracked and scored.
+          Other protocols in the OpenClaw ecosystem can read your reputation.
         </div>
       </div>
 
+      {/* Transaction status */}
+      {writeError && (
+        <div
+          style={{
+            padding: "0.65rem 0.75rem",
+            background: "rgba(255,51,68,0.06)",
+            border: "1px solid rgba(255,51,68,0.15)",
+            borderRadius: "8px",
+            marginBottom: "0.75rem",
+            fontSize: "0.7rem",
+            color: "#ff3344",
+          }}
+        >
+          {writeError.message.includes("User rejected")
+            ? "Transaction rejected"
+            : "Transaction failed. Please try again."}
+          <button
+            onClick={() => reset()}
+            style={{
+              marginLeft: "0.5rem",
+              background: "none",
+              border: "none",
+              color: "rgba(255,255,255,0.4)",
+              cursor: "pointer",
+              fontSize: "0.65rem",
+              fontFamily: "inherit",
+              textDecoration: "underline",
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {isConfirmed && txHash && (
+        <div
+          style={{
+            padding: "0.65rem 0.75rem",
+            background: "rgba(0,255,136,0.06)",
+            border: "1px solid rgba(0,255,136,0.15)",
+            borderRadius: "8px",
+            marginBottom: "0.75rem",
+            fontSize: "0.7rem",
+            color: "#00ff88",
+          }}
+        >
+          Agent registered successfully!{" "}
+          <a
+            href={`https://sepolia.basescan.org/tx/${txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: "#00ff88",
+              textDecoration: "underline",
+              opacity: 0.8,
+            }}
+          >
+            View on BaseScan
+          </a>
+        </div>
+      )}
+
       {/* Submit */}
       <button
-        style={{
-          width: "100%",
-          padding: "0.875rem",
-          background: "linear-gradient(135deg, #00ff88 0%, #00cc66 100%)",
-          border: "none",
-          borderRadius: "10px",
-          color: "#0a0a0a",
-          fontSize: "0.85rem",
-          fontWeight: 700,
-          cursor: "pointer",
-          fontFamily: "inherit",
-          letterSpacing: "0.02em",
-        }}
+        onClick={handleRegister}
+        disabled={isDisabled || !strategyDesc.trim()}
+        style={getButtonStyle()}
       >
-        Register Agent on Base
+        {getButtonText()}
       </button>
 
       <div
